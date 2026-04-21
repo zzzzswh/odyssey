@@ -1,0 +1,6 @@
+node_modules/
+main.js
+*.js.map
+.DS_Store
+.idea/
+.vscode/
