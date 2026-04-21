@@ -6,5 +6,5 @@
   "description": "Visualize your life events on a silky calendar and a beautiful map. Replay your journey.",
   "author": "Evan Heng",
   "authorUrl": "https://github.com/zzzzswh/odyssey",
-  "isDesktopOnly": false
+  "isDesktopOnly": true,
 }
