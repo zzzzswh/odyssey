@@ -1,0 +1,10 @@
+{
+  "id": "odyssey",
+  "name": "Odyssey",
+  "version": "1.0.3",
+  "minAppVersion": "1.4.0",
+  "description": "Visualize your life events on a silky calendar and a beautiful map. Replay your journey.",
+  "author": "Evan Heng",
+  "authorUrl": "https://github.com/zzzzswh",
+  "isDesktopOnly": false
+}
