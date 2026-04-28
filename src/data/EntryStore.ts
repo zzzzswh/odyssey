@@ -1,5 +1,5 @@
 import { App, TFile, TFolder, Events } from "obsidian";
-import type { Entry, EntryFrontmatter } from "./Entry";
+import type { Entry } from "./Entry";
 
 const ODYSSEY_FOLDER = "Odyssey";
 
@@ -17,6 +17,7 @@ const ODYSSEY_FOLDER = "Odyssey";
 export class EntryStore extends Events {
   private app: App;
   private entries: Map<string, Entry> = new Map(); // key: file path
+  private cachedSortedEntries: Entry[] | null = null;
 
   constructor(app: App) {
     super();
@@ -28,6 +29,8 @@ export class EntryStore extends Events {
    */
   loadAll(): void {
     this.entries.clear();
+    this.cachedSortedEntries = null;
+
     const folder = this.app.vault.getAbstractFileByPath(ODYSSEY_FOLDER);
     if (!(folder instanceof TFolder)) {
       // Folder doesn't exist yet. That's fine — we'll create it on first entry.
@@ -56,9 +59,10 @@ export class EntryStore extends Events {
    */
   private parseFile(file: TFile): Entry | null {
     const cache = this.app.metadataCache.getFileCache(file);
-    const fm = (cache?.frontmatter ?? {}) as EntryFrontmatter;
+    const fm = cache?.frontmatter;
+    const date = stringFrontmatterValue(fm?.date);
 
-    if (!fm.date) {
+    if (!date) {
       return null; // not a valid Odyssey entry
     }
 
@@ -66,13 +70,13 @@ export class EntryStore extends Events {
 
     return {
       file,
-      date: fm.date,
-      startTime: fm.start_time,
-      endDate: fm.end_date,
-      endTime: fm.end_time,
-      location: fm.location,
-      lat: typeof fm.lat === "number" ? fm.lat : undefined,
-      lng: typeof fm.lng === "number" ? fm.lng : undefined,
+      date,
+      startTime: stringFrontmatterValue(fm?.start_time),
+      endDate: stringFrontmatterValue(fm?.end_date),
+      endTime: stringFrontmatterValue(fm?.end_time),
+      location: stringFrontmatterValue(fm?.location),
+      lat: numberFrontmatterValue(fm?.lat),
+      lng: numberFrontmatterValue(fm?.lng),
       title,
     };
   }
@@ -105,12 +109,12 @@ export class EntryStore extends Events {
     } else {
       this.entries.delete(file.path);
     }
-    this.trigger("change");
+    this.emitChange();
   }
 
   handleFileDelete(path: string): void {
     if (this.entries.delete(path)) {
-      this.trigger("change");
+      this.emitChange();
     }
   }
 
@@ -121,11 +125,17 @@ export class EntryStore extends Events {
 
   /**
    * Get all entries as an array, sorted by date ascending.
+   *
+   * The result is cached until entry data changes. That keeps React props stable
+   * during hover/focus-only updates and avoids unnecessary marker rebuilds.
    */
   getAll(): Entry[] {
-    return Array.from(this.entries.values()).sort((a, b) =>
-      a.date.localeCompare(b.date),
-    );
+    if (!this.cachedSortedEntries) {
+      this.cachedSortedEntries = Array.from(this.entries.values()).sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
+    }
+    return this.cachedSortedEntries;
   }
 
   /**
@@ -135,4 +145,17 @@ export class EntryStore extends Events {
     const ref = this.on("change", callback);
     return () => this.offref(ref);
   }
+
+  private emitChange(): void {
+    this.cachedSortedEntries = null;
+    this.trigger("change");
+  }
+}
+
+function stringFrontmatterValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function numberFrontmatterValue(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
 }

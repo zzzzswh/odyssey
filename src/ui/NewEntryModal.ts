@@ -175,7 +175,8 @@ export class NewEntryModal extends Modal {
       await this.createEntryFile(lat, lng);
       this.close();
     } catch (e) {
-      new Notice(`Failed to create entry: ${(e as Error).message}`);
+      const message = e instanceof Error ? e.message : String(e);
+      new Notice(`Failed to create entry: ${message}`);
     }
   }
 
@@ -255,10 +256,8 @@ export class NewEntryModal extends Modal {
       if (e instanceof GeocodeError) {
         this.setFeedback("× " + e.message, "error");
       } else {
-        this.setFeedback(
-          "× Unexpected error: " + (e as Error).message,
-          "error",
-        );
+        const message = e instanceof Error ? e.message : String(e);
+        this.setFeedback("× Unexpected error: " + message, "error");
       }
     } finally {
       this.resolving = false;

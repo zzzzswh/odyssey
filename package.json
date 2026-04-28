@@ -15,7 +15,7 @@
     "map",
     "life-log"
   ],
-  "author": "",
+  "author": "Evan Heng",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",

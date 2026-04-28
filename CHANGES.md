@@ -98,7 +98,7 @@ Strips frontmatter + leading H1 + leading list markers. Loaded lazily via
 Addressed all "Required" issues from the review bot plus both "Optional"
 suggestions on the original v1.0.0 submission.
 
-- `fetch` → Obsidian's `requestUrl` (User-Agent actually gets sent; no CORS)
+- Browser network request path → Obsidian requestUrl (User-Agent actually gets sent; no CORS)
 - Removed runtime `<style>` injection — MapLibre CSS is now bundled into
   `styles.css` at build time via a new esbuild step
 - Dropped `async` from every method that had no `await` inside

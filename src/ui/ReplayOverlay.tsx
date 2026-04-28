@@ -8,6 +8,7 @@ import type { Entry } from "../data/Entry";
 import {
   buildTimeline,
   defaultRangeFromEntries,
+  REPLAY_SPEEDS,
   SPEED_LABELS,
   type ReplaySpeed,
   type ReplayStop,
@@ -408,8 +409,7 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- close/pause/resume/next/prev are stable closures defined in this component scope; including them would re-bind the listener on every state change for no behavioral benefit.
-  }, [phase, mode, stepIndex]);
+  }, [phase, mode, stepIndex, close, next, pause, prev, resume]);
 
   const currentStop = stepIndex >= 0 ? timeline[stepIndex] : null;
 
@@ -454,7 +454,7 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
             aria-disabled={mode === "manual"}
           >
             <span>Speed</span>
-            {([0.33, 0.5, 1, 2] as ReplaySpeed[]).map((val) => (
+            {REPLAY_SPEEDS.map((val) => (
               <button
                 key={val}
                 type="button"
@@ -490,7 +490,7 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
                 (mode === "manual" ? " is-active" : "")
               }
               onClick={() => setMode("manual")}
-              title="Click Next to advance — best for narration and focused review"
+              title="Click next to advance — best for narration and focused review"
             >
               👆 Step through
             </button>
@@ -504,8 +504,8 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
             ) : (
               <span>
                 <b>{timeline.length}</b> stop{timeline.length === 1 ? "" : "s"}{" "}
-                · {format(parseISO(range.start), "MMM d, yyyy")} →{" "}
-                {format(parseISO(range.end), "MMM d, yyyy")}
+                · {formatRangeDate(range.start)} →{" "}
+                {formatRangeDate(range.end)}
               </span>
             )}
           </div>
@@ -565,8 +565,8 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
                   onClick={next}
                   title={
                     stepIndex >= timeline.length - 1
-                      ? "Finish (Space or →)"
-                      : "Next (Space or →)"
+                      ? "Finish (space or →)"
+                      : "Next (space or →)"
                   }
                 >
                   ▶
@@ -585,7 +585,7 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
                   <button
                     className="odyssey-replay__ctrl"
                     onClick={pause}
-                    title="Pause (Space)"
+                    title="Pause (space)"
                   >
                     ⏸
                   </button>
@@ -593,7 +593,7 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
                   <button
                     className="odyssey-replay__ctrl"
                     onClick={resume}
-                    title="Resume (Space)"
+                    title="Resume (space)"
                   >
                     ▶
                   </button>
@@ -631,8 +631,8 @@ export function ReplayOverlay({ entries, map, app, onClose }: ReplayOverlayProps
             <h2 className="odyssey-replay__h1">That was your journey.</h2>
             <p className="odyssey-replay__sub">
               {timeline.length} stop{timeline.length === 1 ? "" : "s"}{" "}
-              between {format(parseISO(range.start), "MMM d, yyyy")} and{" "}
-              {format(parseISO(range.end), "MMM d, yyyy")}.
+              between {formatRangeDate(range.start)} and{" "}
+              {formatRangeDate(range.end)}.
             </p>
             <div className="odyssey-replay__actions">
               <button
@@ -678,6 +678,14 @@ function TitleCard({
   );
 }
 
+function formatRangeDate(value: string): string {
+  try {
+    return format(parseISO(value), "MMM d, yyyy");
+  } catch {
+    return value || "Invalid date";
+  }
+}
+
 function formatStopDate(startIso: string, endIso?: string): string {
   try {
     const start = format(parseISO(startIso), "MMMM d, yyyy");
@@ -702,11 +710,3 @@ function emptyLine(): GeoJSON.Feature<GeoJSON.LineString> {
     properties: {},
   };
 }
-
-// Keyboard shortcuts — wired at the app level via a global listener.
-// We attach in MapView's host so Escape / Space respond even when the
-// overlay doesn't have focus.
-export const REPLAY_KEY_HANDLERS = {
-  SPACE_TOGGLES_PLAY: " ",
-  ESC_EXITS: "Escape",
-} as const;

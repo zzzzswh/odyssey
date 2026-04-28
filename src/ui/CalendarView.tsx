@@ -301,7 +301,7 @@ function WeekRow({
   return (
     <div
       className="odyssey-week"
-      style={{ ["--bars-height" as string]: `${barsAreaHeight}px` }}
+      style={{ "--bars-height": `${barsAreaHeight}px` }}
     >
       {/* Layer 1: day cells */}
       <div className="odyssey-week__cells">

@@ -1,6 +1,6 @@
 import * as React from "react";
-import { useEffect, useRef, useMemo, useState } from "react";
-import maplibregl, { Map as MLMap, Marker, LngLatBounds } from "maplibre-gl";
+import { useCallback, useEffect, useRef, useMemo, useState } from "react";
+import maplibregl, { Map as MLMap, LngLatBounds } from "maplibre-gl";
 import type { App } from "obsidian";
 import { format, parseISO } from "date-fns";
 import type { Entry } from "../data/Entry";
@@ -24,20 +24,7 @@ interface MapViewProps {
   onSplitWithCalendar: () => void;
 }
 
-/**
- * Map view — MapLibre GL JS with CartoDB vector tiles.
- *
- * Basemaps offered (all free, no API key):
- *   - Positron      minimalist grayscale — default, makes markers pop
- *   - Voyager       colored with streets/landmarks — good for exploring
- *   - Dark Matter   dark mode — great with Obsidian dark themes
- *
- * Satellite imagery is deliberately excluded here: every worthwhile source
- * requires an API key (MapTiler, Mapbox, Esri). We'll add a settings page
- * in Week 5 that lets users paste their own key and unlock a "Satellite"
- * option — following Odyssey's "invisible complexity" philosophy: users
- * who don't provide a key never see the option at all.
- */
+type GeoEntry = Entry & { lat: number; lng: number };
 
 type BasemapId = "positron" | "voyager" | "dark";
 
@@ -51,7 +38,7 @@ const BASEMAPS: Record<BasemapId, { label: string; url: string }> = {
     url: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
   },
   dark: {
-    label: "Dark Matter",
+    label: "Dark matter",
     url: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   },
 };
@@ -73,28 +60,36 @@ export function MapView({
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MLMap | null>(null);
-  const markersRef = useRef<Map<string, Marker>>(new Map()); // entry.file.path → marker
-  const didFitRef = useRef(false); // fit bounds only on first render with entries
+  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const didFitRef = useRef(false);
   const [basemap, setBasemap] = useState<BasemapId>(DEFAULT_BASEMAP);
   const [dropMode, setDropMode] = useState(false);
   const [replaying, setReplaying] = useState(false);
 
   // Latest callbacks in a ref so MapLibre event handlers always see the
   // current version without needing to re-bind on every render.
-  const callbacksRef = useRef({ onNewEntryAt, onDeleteEntry, onEntryHover });
-  callbacksRef.current = { onNewEntryAt, onDeleteEntry, onEntryHover };
+  const callbacksRef = useRef({
+    onNewEntryAt,
+    onDeleteEntry,
+    onEntryHover,
+    onEntryOpen,
+  });
+  callbacksRef.current = {
+    onNewEntryAt,
+    onDeleteEntry,
+    onEntryHover,
+    onEntryOpen,
+  };
 
   const dropModeRef = useRef(dropMode);
   dropModeRef.current = dropMode;
 
-  // Filter to just the geolocated ones.
-  const geoEntries = useMemo(
-    () =>
-      entries.filter(
-        (e) => typeof e.lat === "number" && typeof e.lng === "number",
-      ),
-    [entries],
-  );
+  const geoEntries = useMemo(() => entries.filter(hasCoordinates), [entries]);
+
+  const clearMarkers = useCallback(() => {
+    for (const marker of markersRef.current.values()) marker.remove();
+    markersRef.current.clear();
+  }, []);
 
   // Initialize map once.
   useEffect(() => {
@@ -109,11 +104,6 @@ export function MapView({
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }));
-    // Geolocate control — a standard puck-and-circle button. Clicking it asks
-    // the browser for the user's current location, flies there, and drops a
-    // live indicator. We deliberately do NOT enable trackUserLocation, because
-    // Odyssey is a life-log, not a navigation app — constant GPS updates would
-    // be wrong in spirit and create Obsidian permission friction.
     map.addControl(
       new maplibregl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
@@ -127,8 +117,6 @@ export function MapView({
       if (!dropModeRef.current) return;
       const { lng, lat } = ev.lngLat;
       callbacksRef.current.onNewEntryAt(lat, lng);
-      // Exit drop mode after one placement — creating should feel deliberate,
-      // not sticky. If the user wants to place another, they re-enter the mode.
       setDropMode(false);
     });
 
@@ -147,8 +135,7 @@ export function MapView({
       map.remove();
       mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- we initialize the map exactly once at mount; re-running this effect would tear down and recreate MapLibre, losing user-facing state (zoom, pan) for no benefit.
-  }, []);
+  }, [clearMarkers]);
 
   // Toggle a CSS class on the map container to get the crosshair cursor and
   // subtle visual cue when drop mode is active.
@@ -173,17 +160,13 @@ export function MapView({
     const map = mapRef.current;
     if (!map) return;
     map.setStyle(BASEMAPS[basemap].url);
-    // Markers are DOM-overlaid, not part of the style, so they survive the
-    // style swap automatically. No action needed here.
   }, [basemap]);
 
-  // Sync markers whenever geoEntries change.
+  // Sync markers whenever geolocated entries change.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Wait for map style to finish loading before adding markers.
-    // If we add markers too early, the popup anchor math can glitch.
     const applyMarkers = () => {
       clearMarkers();
       for (const entry of geoEntries) {
@@ -194,9 +177,6 @@ export function MapView({
           className: "odyssey-popup",
         }).setHTML(buildPopupHTML(entry));
 
-        // Build a custom marker element (dot + ring) — replaces MapLibre's
-        // default SVG pin. We pass it via the `element` option and also keep
-        // a data attribute for the hover-highlight effect.
         const markerEl = document.createElement("div");
         markerEl.className = "odyssey-marker";
         const dot = document.createElement("div");
@@ -204,14 +184,11 @@ export function MapView({
         markerEl.appendChild(dot);
 
         const marker = new maplibregl.Marker({ element: markerEl })
-          .setLngLat([entry.lng!, entry.lat!])
+          .setLngLat([entry.lng, entry.lat])
           .setPopup(popup)
           .addTo(map);
 
         const el = marker.getElement();
-        // Expose the path as a data attribute so our hover-highlight effect
-        // can toggle a class on the right marker without maintaining a
-        // separate DOM index.
         el.setAttribute("data-odyssey-path", entry.file.path);
 
         // Right-click → confirm delete.
@@ -238,7 +215,7 @@ export function MapView({
           if (btn) {
             btn.onclick = (ev) => {
               ev.preventDefault();
-              onEntryOpen(entry);
+              callbacksRef.current.onEntryOpen(entry);
             };
           }
         });
@@ -255,8 +232,7 @@ export function MapView({
 
     if (map.isStyleLoaded()) applyMarkers();
     else map.once("load", applyMarkers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- callbacks are read via callbacksRef so they don't need to be in the dep list; including them would re-run this effect on every render and churn every marker.
-  }, [geoEntries]);
+  }, [geoEntries, clearMarkers]);
 
   // Hover highlight: when another view tells us which entry is hovered,
   // toggle an is-hovered class on the corresponding marker's DOM node.
@@ -269,7 +245,7 @@ export function MapView({
         el.classList.remove("is-hovered");
       }
     }
-  }, [hoveredPath, geoEntries]);
+  }, [hoveredPath]);
 
   // Focus request from the other view: fly to the requested entry.
   useEffect(() => {
@@ -277,18 +253,13 @@ export function MapView({
     const map = mapRef.current;
     if (!map) return;
     const entry = geoEntries.find((e) => e.file.path === focusRequest);
-    if (!entry) return; // the requested entry has no coords; nothing to do
+    if (!entry) return;
     map.flyTo({
-      center: [entry.lng!, entry.lat!],
+      center: [entry.lng, entry.lat],
       zoom: Math.max(map.getZoom(), 10),
       duration: 700,
     });
   }, [focusRequest, geoEntries]);
-
-  function clearMarkers() {
-    for (const m of markersRef.current.values()) m.remove();
-    markersRef.current.clear();
-  }
 
   return (
     <div className="odyssey-mapview">
@@ -300,26 +271,25 @@ export function MapView({
         </div>
         <div style={{ flex: 1 }} />
 
-        {/* Drop pin toggle */}
         <button
-          className={
-            "odyssey-mapview__drop" + (dropMode ? " is-active" : "")
-          }
+          className={"odyssey-mapview__drop" + (dropMode ? " is-active" : "")}
           onClick={() => setDropMode((v) => !v)}
           title={
             dropMode
-              ? "Cancel (ESC) — click the map to place, or click here to cancel"
+              ? "Cancel (Esc) — click the map to place, or click here to cancel"
               : "Drop a pin to create an entry at a clicked location"
           }
         >
           📍 {dropMode ? "Click map…" : "Drop pin"}
         </button>
 
-        {/* Basemap picker */}
         <select
           className="odyssey-mapview__basemap"
           value={basemap}
-          onChange={(e) => setBasemap(e.target.value as BasemapId)}
+          onChange={(e) => {
+            const nextBasemap = e.target.value;
+            if (isBasemapId(nextBasemap)) setBasemap(nextBasemap);
+          }}
           title="Basemap style"
         >
           {Object.entries(BASEMAPS).map(([id, b]) => (
@@ -381,7 +351,7 @@ export function MapView({
           You have {entries.length} entr{entries.length === 1 ? "y" : "ies"},
           but none have coordinates yet. Add <code>lat</code> and{" "}
           <code>lng</code> to an entry's frontmatter, or paste{" "}
-          <em>latitude, longitude</em> into the Coordinates field when creating
+          <em>latitude, longitude</em> into the coordinates field when creating
           a new one.
         </div>
       )}
@@ -398,8 +368,16 @@ export function MapView({
   );
 }
 
+function hasCoordinates(entry: Entry): entry is GeoEntry {
+  return typeof entry.lat === "number" && typeof entry.lng === "number";
+}
+
+function isBasemapId(value: string): value is BasemapId {
+  return Object.prototype.hasOwnProperty.call(BASEMAPS, value);
+}
+
 function buildPopupHTML(entry: Entry): string {
-  const dateLabel = formatDateRange(entry);
+  const dateLabel = escapeHTML(formatDateRange(entry));
   const location = entry.location
     ? `<div class="odyssey-popup__loc">${escapeHTML(entry.location)}</div>`
     : "";
@@ -435,16 +413,16 @@ function escapeHTML(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function fitToEntries(map: MLMap, entries: Entry[]) {
+function fitToEntries(map: MLMap, entries: GeoEntry[]) {
   if (entries.length === 0) return;
 
   if (entries.length === 1) {
     const e = entries[0];
-    map.flyTo({ center: [e.lng!, e.lat!], zoom: 11, duration: 600 });
+    map.flyTo({ center: [e.lng, e.lat], zoom: 11, duration: 600 });
     return;
   }
 
   const bounds = new LngLatBounds();
-  for (const e of entries) bounds.extend([e.lng!, e.lat!]);
+  for (const e of entries) bounds.extend([e.lng, e.lat]);
   map.fitBounds(bounds, { padding: 60, duration: 600, maxZoom: 12 });
 }

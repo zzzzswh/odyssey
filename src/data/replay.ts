@@ -19,6 +19,8 @@ import { parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 export type ReplaySpeed = 0.33 | 0.5 | 1 | 2;
 
+export const REPLAY_SPEEDS: ReplaySpeed[] = [0.33, 0.5, 1, 2];
+
 export const SPEED_LABELS: Record<ReplaySpeed, string> = {
   0.33: "Cinematic",
   0.5: "Slow",

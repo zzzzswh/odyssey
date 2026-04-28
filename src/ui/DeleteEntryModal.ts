@@ -1,4 +1,4 @@
-import { App, Modal, Setting } from "obsidian";
+import { App, Modal, Notice, Setting } from "obsidian";
 import type { Entry } from "../data/Entry";
 
 /**
@@ -33,9 +33,8 @@ export class DeleteEntryModal extends Modal {
         b
           .setButtonText("Delete")
           .setWarning()
-          .onClick(async () => {
-            await this.onConfirm();
-            this.close();
+          .onClick(() => {
+            void this.confirmDelete();
           }),
       )
       .addButton((b) => b.setButtonText("Cancel").onClick(() => this.close()));
@@ -43,5 +42,15 @@ export class DeleteEntryModal extends Modal {
 
   onClose() {
     this.contentEl.empty();
+  }
+
+  private async confirmDelete(): Promise<void> {
+    try {
+      await this.onConfirm();
+      this.close();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      new Notice(`Failed to delete entry: ${message}`);
+    }
   }
 }

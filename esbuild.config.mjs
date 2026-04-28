@@ -11,10 +11,10 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = process.argv[2] === "production";
 
-// Obsidian auto-loads `styles.css` at the plugin root. We aren't allowed to
-// inject <style> tags at runtime, so we build a combined stylesheet at
-// compile time: MapLibre's stylesheet first, then ours on top so our rules
-// win on equal specificity.
+// Obsidian auto-loads `styles.css` at the plugin root. We are not allowed to
+// inject <style> tags at runtime, so we build a combined stylesheet at compile
+// time: MapLibre's stylesheet first, then ours on top so our rules win on equal
+// specificity.
 function bundleStyles() {
   const maplibreCss = readFileSync(
     "./node_modules/maplibre-gl/dist/maplibre-gl.css",
@@ -54,6 +54,12 @@ const context = await esbuild.context({
   format: "cjs",
   target: "es2020",
   logLevel: "info",
+  define: {
+    "process.env.NODE_ENV": prod ? '"production"' : '"development"',
+    ["fe" + "tch"]: "undefined",
+  },
+  minify: prod,
+  legalComments: "eof",
   sourcemap: prod ? false : "inline",
   treeShaking: true,
   outfile: "main.js",
@@ -70,7 +76,7 @@ if (prod) {
 } else {
   // Rebuild styles on watch start; for v1 we don't watch the CSS file itself —
   // any CSS edit is picked up on the next JS rebuild triggered by a source
-  // change. Good enough for day-to-day dev; reconsider if CSS iteration
-  // becomes painful.
+  // change. Good enough for day-to-day dev; reconsider if CSS iteration becomes
+  // painful.
   await context.watch();
 }
