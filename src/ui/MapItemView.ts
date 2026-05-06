@@ -39,7 +39,7 @@ export class MapItemView extends ItemView {
     return "map";
   }
 
-  async onOpen(): Promise<void> {
+  onOpen(): Promise<void> {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("odyssey-map-host");
@@ -58,16 +58,16 @@ export class MapItemView extends ItemView {
       this.focusRequest = null;
     });
     this.render();
-    await Promise.resolve();
+    return Promise.resolve();
   }
 
-  async onClose(): Promise<void> {
+  onClose(): Promise<void> {
     this.unsubscribe?.();
     this.unsubscribeHover?.();
     this.unsubscribeFocus?.();
     this.root?.unmount();
     this.root = null;
-    await Promise.resolve();
+    return Promise.resolve();
   }
 
   private render() {

@@ -45,7 +45,7 @@ export class CalendarItemView extends ItemView {
     return "calendar";
   }
 
-  async onOpen(): Promise<void> {
+  onOpen(): Promise<void> {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("odyssey-calendar-host");
@@ -61,21 +61,19 @@ export class CalendarItemView extends ItemView {
     this.unsubscribeFocus = this.sync.subscribeFocus((path) => {
       this.focusRequest = path;
       this.render();
-      // clear the one-shot focus after the render so it doesn't re-trigger
-      // on unrelated re-renders
       this.focusRequest = null;
     });
     this.render();
-    await Promise.resolve();
+    return Promise.resolve();
   }
 
-  async onClose(): Promise<void> {
+  onClose(): Promise<void> {
     this.unsubscribe?.();
     this.unsubscribeHover?.();
     this.unsubscribeFocus?.();
     this.root?.unmount();
     this.root = null;
-    await Promise.resolve();
+    return Promise.resolve();
   }
 
   private render() {

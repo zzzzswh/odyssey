@@ -25,7 +25,7 @@ export default class OdysseyPlugin extends Plugin {
   store!: EntryStore;
   sync!: ViewSync;
 
-  onload() {
+  onload(): void {
     // 1. Data layer
     this.store = new EntryStore(this.app);
     this.sync = new ViewSync();
