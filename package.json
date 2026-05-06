@@ -1,6 +1,6 @@
 {
   "name": "odyssey",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Your life is an Odyssey. Visualize your life events on a silky calendar and a beautiful map.",
   "main": "main.js",
   "scripts": {
