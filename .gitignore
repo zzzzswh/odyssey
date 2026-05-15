@@ -7,3 +7,5 @@ main.js
 .vscode/
 .claude/
 CLAUDE.md
+# Large media files - need compression before commit
+docs/*.gif
