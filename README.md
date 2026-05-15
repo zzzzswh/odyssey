@@ -4,11 +4,7 @@
 
 An Obsidian plugin that turns your life events into a **silky calendar**, a **beautiful map**, and a **cinematic replay** — all powered by plain Markdown files you own.
 
-<!-- Once you have screenshots in the repo, uncomment this:
-![Calendar view](docs/calendar.png)
-![Map view](docs/map.png)
-![Replay mode](docs/replay.png)
--->
+---
 
 ## What it does
 
@@ -17,19 +13,55 @@ An Obsidian plugin that turns your life events into a **silky calendar**, a **be
 - **🎬 Replay mode** — pick a date range, hit play, and watch your life unfold across the map with a camera that flies between stops and leaves a dotted trail
 - **Two views, one story** — hover an entry in one view to highlight it in the other, click to focus, open side-by-side with one button
 
-## Why
+## See it in action
+
+### 📅 Calendar — every event in its rightful place
+
+![Calendar view](docs/calendar.gif)
+
+A clean month grid. Single-day entries become pills, multi-day journeys stretch as bars across weeks. Hover any day for a quick **+**, hover any entry to delete.
+
+### 🗺 Map — every place you've been, on one canvas
+
+![Map view](docs/map.gif)
+
+Three free basemaps, no API keys. Click any dot to peek at the entry, drop a pin to create one on the spot.
+
+### 🎬 Replay — watch your year unfold
+
+![Replay mode](docs/replay.gif)
+
+Pick a date range, hit play. The camera flies between your stops, dashed lines trace the past, the present pulses on the screen.
+
+## Why Odyssey exists
 
 Existing tools split your life across silos:
 
 - **Calendars** know *when* but not *where*
 - **Maps** know *where* but not *when*
 - **Journals** know *what* but not *when* or *where*
+- **Cloud note apps** know all three — and so do their servers
 
-Odyssey keeps time and place together the way your memory does, and hands you back control with plain Markdown files. Your vault, your data, no lock-in.
+Odyssey keeps time and place together the way your memory does — and hands you back the controls.
+
+### Your life is not training data
+
+The other thing Odyssey is *not* is a cloud product.
+
+Your honeymoon. Your kid's first steps. The café where you met them. The trip you took alone to figure things out. These aren't rows in someone's database — they're yours. Odyssey keeps it that way:
+
+- 🔒 **Local-first** — every entry lives in your vault as a plain Markdown file. Nothing syncs anywhere unless *you* set it up.
+- 🚫 **No accounts, no servers, no telemetry** — Odyssey doesn't know you exist.
+- 🤖 **Nothing gets fed to an AI model** — not yours, not anyone's. Your memories aren't going to be summarized in someone's chatbot demo.
+- 📂 **Plain Markdown, forever** — open any entry in any text editor, twenty years from now, and it still works. Even if Odyssey disappears tomorrow.
+
+Your vault, your data, no lock-in. The way it should be.
 
 ## The entry format
 
-Every entry is a regular `.md` file in an `Odyssey/` folder with simple frontmatter:
+**An entry is just a Markdown file.** That's it. Open it in any text editor twenty years from now and it will still work.
+
+Every entry lives in an `Odyssey/` folder with simple frontmatter:
 
 ```markdown
 ---
@@ -44,7 +76,7 @@ lng: 139.6503                  # optional
 
 # Japan trip
 
-Notes go here, plain Markdown, yours forever.
+Notes go here. Plain Markdown. Yours forever.
 ```
 
 Only `date` is required. Everything else is optional and Odyssey adapts the rendering — a single-day event becomes a pill on the calendar, a multi-day range becomes a bar, and coordinates unlock the map and replay.
@@ -112,9 +144,30 @@ Pick a date range, hit play, and the map takes you on a journey:
 ## Configuration
 
 No settings page yet. Everything works from defaults. Future versions may add:
+
 - Satellite imagery (requires a MapTiler API key)
 - Custom accent colors
 - Alternate calendar start-of-week
+
+## Roadmap
+
+Things on my mind for upcoming versions:
+
+- [ ] Settings page with theme customization
+- [ ] Photo and video embeds, with thumbnails right on the map
+- [ ] Year-in-review summary stats
+- [ ] Import from Google Timeline / Apple Photos
+- [ ] Mobile polish for Obsidian on iOS & Android
+
+Have an idea? [Open an issue](https://github.com/zzzzswh/odyssey/issues) — I read every one.
+
+## A note from the maker
+
+I built Odyssey because somewhere along the way, *writing things down* turned into *paying attention*, and paying attention turned into loving the days I was living. The trips, sure, but also the small ones — a walk, a coffee, a Tuesday that ended up mattering.
+
+Everyone has their own Odyssey period. **Record it. Live through it.** That's what this plugin is for.
+
+If it helps you do the same, that's all I wanted.
 
 ## Credits
 
@@ -122,6 +175,8 @@ No settings page yet. Everything works from defaults. Future versions may add:
 - [CARTO](https://carto.com/) — beautiful free basemap styles (Positron, Voyager, Dark Matter)
 - [OpenStreetMap](https://www.openstreetmap.org/) — contributors worldwide
 - [Nominatim](https://nominatim.openstreetmap.org/) — geocoding
+
+And to the Obsidian community — for proving every day that the best tools are the ones their users actually own.
 
 ## Development
 
