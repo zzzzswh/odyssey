@@ -17,22 +17,21 @@ An Obsidian plugin that turns your life events into a **silky calendar**, a **be
 
 ### 📅 Calendar — every event in its rightful place
 
-![Calendar view](docs/calendar.gif)
+<video src="docs/calendar.mp4" controls autoplay loop muted playsinline width="100%"></video>
 
 A clean month grid. Single-day entries become pills, multi-day journeys stretch as bars across weeks. Hover any day for a quick **+**, hover any entry to delete.
 
 ### 🗺 Map — every place you've been, on one canvas
 
-![Map view](docs/map.gif)
+<video src="docs/map.mp4" controls autoplay loop muted playsinline width="100%"></video>
 
 Three free basemaps, no API keys. Click any dot to peek at the entry, drop a pin to create one on the spot.
 
 ### 🎬 Replay — watch your year unfold
 
-![Replay mode](docs/replay.gif)
+<video src="docs/replay.mp4" controls autoplay loop muted playsinline width="100%"></video>
 
 Pick a date range, hit play. The camera flies between your stops, dashed lines trace the past, the present pulses on the screen.
-
 ## Why Odyssey exists
 
 Existing tools split your life across silos:
